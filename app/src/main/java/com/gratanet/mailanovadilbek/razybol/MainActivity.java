@@ -193,7 +193,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sendRating(final String rating) {
-        final String url = "https://docs.google.com/forms/d/e/1FAIpQLScZg_9EPJWkIOJnpK0BOPseBn10c0tx9hxN9GTzZ3QSDe-Ssg/formResponse";
+        final String url = "https://docs.google.com/forms/d/e/1FAIpQLSfyS90FjGcFaJ3-2GWefyeKINZNPtts41tBikMyg6xA3xz_7g/formResponse";
         final String date = getCurrentTimeStamp();
         final String email = account.getEmail();
 
@@ -201,9 +201,9 @@ public class MainActivity extends AppCompatActivity {
 
         mReq.send(Request.Method.POST, url, new HashMap<String, String>() {
             {
-                put("entry.978440703", date);
-                put("entry.1485789755", email);
-                put("entry.2004267105", rating);
+                put("entry.1095191177", date);
+                put("entry.352556562", email);
+                put("entry.1246101970", rating);
             }
         }, new Response.Listener<String>() {
             @Override
@@ -289,14 +289,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sendToServer(final String time, final String email, final String rating) {
-        final String url = "https://docs.google.com/forms/d/e/1FAIpQLScZg_9EPJWkIOJnpK0BOPseBn10c0tx9hxN9GTzZ3QSDe-Ssg/formResponse";
+        final String url = "https://docs.google.com/forms/d/e/1FAIpQLSfyS90FjGcFaJ3-2GWefyeKINZNPtts41tBikMyg6xA3xz_7g/formResponse";
         removeFromDB(time, rating);
         HttpRequest mReq = new HttpRequest(getApplicationContext());
         mReq.send(Request.Method.POST, url, new HashMap<String, String>() {
             {
-                put("entry.978440703", time);
-                put("entry.1485789755", email);
-                put("entry.2004267105", rating);
+                put("entry.1095191177", time);
+                put("entry.352556562", email);
+                put("entry.1246101970", rating);
             }
         }, new Response.Listener<String>() {
             @Override
