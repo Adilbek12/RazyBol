@@ -1,12 +1,20 @@
 package com.gratanet.mailanovadilbek.razybol;
 
-import android.annotation.SuppressLint;
+import android.app.ProgressDialog;
+import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -29,9 +37,9 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.gratanet.mailanovadilbek.razybol.fragments.LoginFragment;
 import com.gratanet.mailanovadilbek.razybol.fragments.RatingFragment;
+import com.gratanet.mailanovadilbek.razybol.helper.Database;
 import com.gratanet.mailanovadilbek.razybol.helper.HttpRequest;
 
-import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -40,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
 
     private final int RC_SIGN_IN = 546;
     private Toolbar toolbar;
+    private boolean isEmpty = true;
     private GoogleSignInClient mGoogleSignInClient;
     private LoginFragment loginFragment = new LoginFragment(this);
     private RatingFragment ratingFragment = new RatingFragment();
@@ -203,22 +212,116 @@ public class MainActivity extends AppCompatActivity {
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                addToDatabase();
+                addToDatabase(date, email, rating);
             }
         });
         showAlertDialog();
     }
 
     private void showAlertDialog() {
+        final AlertDialog.Builder dialog = new AlertDialog.Builder(this)
+                .setMessage("Спасибо за ваш отзыв!");
+        final AlertDialog alert = dialog.create();
+        alert.show();
 
+        final Handler handler = new Handler();
+        final Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                if (alert.isShowing()) {
+                    alert.dismiss();
+                }
+            }
+        };
+
+        handler.postDelayed(runnable, 2000);
     }
 
-    private void addToDatabase() {
-
+    private void addToDatabase(String time, String email, String rating) {
+        Database database = new Database(this);
+        SQLiteDatabase sqLiteDatabase = database.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("tm", time);
+        values.put("email", email);
+        values.put("rat", rating);
+        sqLiteDatabase.insert("mytable", null, values);
     }
 
-    private void sync() {
+    private void sync() {  // TODO асинхронизировать
+        if (!isNetworkAvailable()) {
+            Toast.makeText(this, "Нет интернет подключения", Toast.LENGTH_LONG).show();
+        } else {
+            final ProgressDialog pd = new ProgressDialog(this);
+            pd.setMessage("Синхронизация");
+            pd.setCanceledOnTouchOutside(false);
+            pd.show();
 
+            Database database = new Database(this);
+            SQLiteDatabase sqLiteDatabase = database.getWritableDatabase();
+            Cursor cursor = sqLiteDatabase.rawQuery("SELECT * FROM mytable", null);
+            int a = cursor.getColumnIndex("tm");
+            int b = cursor.getColumnIndex("email");
+            int c = cursor.getColumnIndex("rat");
+            while (cursor.moveToNext()) {
+                isEmpty = false;
+                String time = cursor.getString(a);
+                String email = cursor.getString(b);
+                String rating = cursor.getString(c);
+                sendToServer(time, email, rating);
+            }
+
+            Runnable progressRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    pd.dismiss();
+                }
+            };
+
+            if (!isEmpty) {
+                Handler pdCanceller = new Handler();
+                pdCanceller.postDelayed(progressRunnable, 5000);
+                isEmpty = true;
+            } else {
+                pd.dismiss();
+            }
+            cursor.close();
+        }
+    }
+
+    private void sendToServer(final String time, final String email, final String rating) {
+        final String url = "https://docs.google.com/forms/d/e/1FAIpQLScZg_9EPJWkIOJnpK0BOPseBn10c0tx9hxN9GTzZ3QSDe-Ssg/formResponse";
+        removeFromDB(time, rating);
+        HttpRequest mReq = new HttpRequest(getApplicationContext());
+        mReq.send(Request.Method.POST, url, new HashMap<String, String>() {
+            {
+                put("entry.978440703", time);
+                put("entry.1485789755", email);
+                put("entry.2004267105", rating);
+            }
+        }, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                addToDatabase(time, email, rating);
+            }
+        });
+    }
+
+    private void removeFromDB(String time, String rating) {
+        Database database = new Database(MainActivity.this);
+        SQLiteDatabase sqLiteDatabase = database.getWritableDatabase();
+        sqLiteDatabase.execSQL("DELETE FROM mytable WHERE "
+                + "tm = '" + time + "' AND rat = '" + rating + "'");
+    }
+
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager = (ConnectivityManager)
+                getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 
 }
