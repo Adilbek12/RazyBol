@@ -1,13 +1,11 @@
 package com.gratanet.mailanovadilbek.razybol;
 
+import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
@@ -40,6 +38,7 @@ import com.gratanet.mailanovadilbek.razybol.fragments.RatingFragment;
 import com.gratanet.mailanovadilbek.razybol.helper.Database;
 import com.gratanet.mailanovadilbek.razybol.helper.HttpRequest;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -143,9 +142,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.menu_sync:
-                sync();
-                return true;
             case R.id.menu_sign_out:
                 logout();
                 return true;
@@ -186,6 +182,7 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
+    @SuppressLint("SimpleDateFormat")
     public String getCurrentTimeStamp() {
         long time = System.currentTimeMillis();
         Date date = new Date(time);
@@ -193,7 +190,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sendRating(final String rating) {
-        final String url = "https://docs.google.com/forms/d/e/1FAIpQLSfyS90FjGcFaJ3-2GWefyeKINZNPtts41tBikMyg6xA3xz_7g/formResponse";
+        final String url = "https://docs.google.com/forms/d/e/1FAIpQLScZg_9EPJWkIOJnpK0BOPseBn10c0tx9hxN9GTzZ3QSDe-Ssg/formResponse";
         final String date = getCurrentTimeStamp();
         final String email = account.getEmail();
 
@@ -201,9 +198,12 @@ public class MainActivity extends AppCompatActivity {
 
         mReq.send(Request.Method.POST, url, new HashMap<String, String>() {
             {
-                put("entry.1095191177", date);
-                put("entry.352556562", email);
-                put("entry.1246101970", rating);
+//        put("entry.1095191177", date);
+//        put("entry.352556562", email);
+//        put("entry.1246101970", rating);
+                put("entry.978440703", date);
+                put("entry.1485789755", email);
+                put("entry.2004267105", rating);
             }
         }, new Response.Listener<String>() {
             @Override
@@ -230,6 +230,7 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 if (alert.isShowing()) {
                     alert.dismiss();
+                    sync();
                 }
             }
         };
@@ -247,10 +248,8 @@ public class MainActivity extends AppCompatActivity {
         sqLiteDatabase.insert("mytable", null, values);
     }
 
-    private void sync() {  // TODO асинхронизировать
-        if (!isNetworkAvailable()) {
-            Toast.makeText(this, "Нет интернет подключения", Toast.LENGTH_LONG).show();
-        } else {
+    private void sync() {
+        if (isNetworkAvailable()) {
             final ProgressDialog pd = new ProgressDialog(this);
             pd.setMessage("Синхронизация");
             pd.setCanceledOnTouchOutside(false);
@@ -284,19 +283,25 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 pd.dismiss();
             }
+            sqLiteDatabase.close();
+            database.close();
             cursor.close();
         }
     }
 
     private void sendToServer(final String time, final String email, final String rating) {
-        final String url = "https://docs.google.com/forms/d/e/1FAIpQLSfyS90FjGcFaJ3-2GWefyeKINZNPtts41tBikMyg6xA3xz_7g/formResponse";
+        //"https://docs.google.com/forms/d/e/1FAIpQLSfyS90FjGcFaJ3-2GWefyeKINZNPtts41tBikMyg6xA3xz_7g/formResponse";
+        final String url = "https://docs.google.com/forms/d/e/1FAIpQLScZg_9EPJWkIOJnpK0BOPseBn10c0tx9hxN9GTzZ3QSDe-Ssg/formResponse";
         removeFromDB(time, rating);
         HttpRequest mReq = new HttpRequest(getApplicationContext());
         mReq.send(Request.Method.POST, url, new HashMap<String, String>() {
             {
-                put("entry.1095191177", time);
-                put("entry.352556562", email);
-                put("entry.1246101970", rating);
+//        put("entry.1095191177", time);
+//        put("entry.352556562", email);
+//        put("entry.1246101970", rating);
+                put("entry.978440703", time);
+                put("entry.1485789755", email);
+                put("entry.2004267105", rating);
             }
         }, new Response.Listener<String>() {
             @Override
@@ -318,10 +323,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean isNetworkAvailable() {
-        ConnectivityManager connectivityManager = (ConnectivityManager)
-                getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
-        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+        Runtime runtime = Runtime.getRuntime();
+        try {
+            Process ipProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
+            int exitValue = ipProcess.waitFor();
+            return (exitValue == 0);
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
-
 }
