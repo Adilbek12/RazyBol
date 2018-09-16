@@ -35,6 +35,7 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.gratanet.mailanovadilbek.razybol.fragments.LoginFragment;
 import com.gratanet.mailanovadilbek.razybol.fragments.RatingFragment;
+import com.gratanet.mailanovadilbek.razybol.helper.Constants;
 import com.gratanet.mailanovadilbek.razybol.helper.Database;
 import com.gratanet.mailanovadilbek.razybol.helper.HttpRequest;
 
@@ -152,16 +153,16 @@ public class MainActivity extends AppCompatActivity {
     public void onClickRating(View view) {
         int id = view.getId();
         switch (id) {
-            case R.id.rating_1:
+            case R.id.rating_4:
                 sendRating("Плохо");
                 break;
-            case R.id.rating_2:
+            case R.id.rating_3:
                 sendRating("Удовлетворительно");
                 break;
-            case R.id.rating_3:
+            case R.id.rating_2:
                 sendRating("Хорошо");
                 break;
-            case R.id.rating_4:
+            case R.id.rating_1:
                 sendRating("Отлично");
                 break;
         }
@@ -190,20 +191,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sendRating(final String rating) {
-        final String url = "https://docs.google.com/forms/d/e/1FAIpQLScZg_9EPJWkIOJnpK0BOPseBn10c0tx9hxN9GTzZ3QSDe-Ssg/formResponse";
         final String date = getCurrentTimeStamp();
         final String email = account.getEmail();
 
         HttpRequest mReq = new HttpRequest(getApplicationContext());
 
-        mReq.send(Request.Method.POST, url, new HashMap<String, String>() {
+        mReq.send(Request.Method.POST, Constants.URL_ENTRY, new HashMap<String, String>() {
             {
-//        put("entry.1095191177", date);
-//        put("entry.352556562", email);
-//        put("entry.1246101970", rating);
-                put("entry.978440703", date);
-                put("entry.1485789755", email);
-                put("entry.2004267105", rating);
+                put(Constants.DATA_ENTRY, date);
+                put(Constants.EMAIL_ENTRY, email);
+                put(Constants.RATING_ENTRY, rating);
             }
         }, new Response.Listener<String>() {
             @Override
@@ -250,10 +247,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void sync() {
         if (isNetworkAvailable()) {
-            final ProgressDialog pd = new ProgressDialog(this);
-            pd.setMessage("Синхронизация");
-            pd.setCanceledOnTouchOutside(false);
-            pd.show();
+//            final ProgressDialog pd = new ProgressDialog(this);
+//            pd.setMessage("Синхронизация");
+//            pd.setCanceledOnTouchOutside(false);
+//            pd.show();
 
             Database database = new Database(this);
             SQLiteDatabase sqLiteDatabase = database.getWritableDatabase();
@@ -269,19 +266,19 @@ public class MainActivity extends AppCompatActivity {
                 sendToServer(time, email, rating);
             }
 
-            Runnable progressRunnable = new Runnable() {
-                @Override
-                public void run() {
-                    pd.dismiss();
-                }
-            };
+//            Runnable progressRunnable = new Runnable() {
+//                @Override
+//                public void run() {
+//                    pd.dismiss();
+//                }
+//            };
 
             if (!isEmpty) {
-                Handler pdCanceller = new Handler();
-                pdCanceller.postDelayed(progressRunnable, 5000);
+//                Handler pdCanceller = new Handler();
+//                pdCanceller.postDelayed(progressRunnable, 5000);
                 isEmpty = true;
             } else {
-                pd.dismiss();
+//                pd.dismiss();
             }
             sqLiteDatabase.close();
             database.close();
@@ -290,18 +287,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sendToServer(final String time, final String email, final String rating) {
-        //"https://docs.google.com/forms/d/e/1FAIpQLSfyS90FjGcFaJ3-2GWefyeKINZNPtts41tBikMyg6xA3xz_7g/formResponse";
-        final String url = "https://docs.google.com/forms/d/e/1FAIpQLScZg_9EPJWkIOJnpK0BOPseBn10c0tx9hxN9GTzZ3QSDe-Ssg/formResponse";
         removeFromDB(time, rating);
         HttpRequest mReq = new HttpRequest(getApplicationContext());
-        mReq.send(Request.Method.POST, url, new HashMap<String, String>() {
+        mReq.send(Request.Method.POST, Constants.URL_ENTRY, new HashMap<String, String>() {
             {
-//        put("entry.1095191177", time);
-//        put("entry.352556562", email);
-//        put("entry.1246101970", rating);
-                put("entry.978440703", time);
-                put("entry.1485789755", email);
-                put("entry.2004267105", rating);
+                put(Constants.DATA_ENTRY, time);
+                put(Constants.EMAIL_ENTRY, email);
+                put(Constants.RATING_ENTRY, rating);
             }
         }, new Response.Listener<String>() {
             @Override
