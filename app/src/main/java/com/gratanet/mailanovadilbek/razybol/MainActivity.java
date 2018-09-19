@@ -217,7 +217,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void showAlertDialog() {
         final AlertDialog.Builder dialog = new AlertDialog.Builder(this)
-                .setMessage("Спасибо за ваш отзыв!");
+                .setMessage("Пікіріңізге рахмет!\n" +
+                        "Спасибо за отзыв!");
         final AlertDialog alert = dialog.create();
         alert.show();
 
